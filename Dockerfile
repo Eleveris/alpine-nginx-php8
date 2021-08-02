@@ -28,7 +28,7 @@ RUN apk --no-cache add php8=${PHP_VERSION} \
     php8-xmlwriter \
     nginx supervisor curl tzdata htop dcron
     
-RUN rm /etc/nginx/conf.d/default.conf
+#RUN rm /etc/nginx/conf.d/default.conf
 
 # Symlink php8 => php
 RUN ln -s /usr/bin/php8 /usr/bin/php
@@ -47,7 +47,7 @@ COPY config/php.ini /etc/php8/conf.d/custom.ini
 COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Setup document root
-RUN mkdir -p /var/www/html
+RUN mkdir -p /var/www/html 
 
 # Make sure files/folders needed by the processes are accessable when they run under the nobody user
 RUN chown -R nobody.nobody /var/www/html && \
@@ -61,12 +61,14 @@ USER nobody
 # Add application
 WORKDIR /var/www/html
 COPY --chown=nobody src/ /var/www/html/
+RUN cd /var/www/html && \
+    composer install
 
 # Expose the port nginx is reachable on
-EXPOSE 80
+EXPOSE 8080
 
 # Let supervisord start nginx & php-fpm
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
 
 # Configure a healthcheck to validate that everything is up&running
-HEALTHCHECK --timeout=10s CMD curl --silent --fail http://127.0.0.1:80/fpm-ping
+HEALTHCHECK --timeout=10s CMD curl --silent --fail http://127.0.0.1:8080/fpm-ping
